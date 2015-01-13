@@ -5,6 +5,16 @@
 //  Created by malong on 15/1/13.
 //  Copyright (c) 2015年 LanOu3g. All rights reserved.
 //
+/*!
+ *  @brief  显示模糊效果
+ *
+ *  在iOS8以下，使用UIImageBlurEffectCategory这个类目
+ *  iOS8开始，使用UIVisualEffect类簇
+ *
+ *  优缺点：1、UIImageBlurEffectCategory类簇相较于UIVisualEffect能实现的效果更多。可以通过设置高斯半径、渲染颜色、饱和度和遮罩图片来自定义效果，但耗用的内存要比UIVisualEffect多，且内存释放不如UIVisualEffect彻底。
+ 2、UIVisualEffect虽然实现的模糊效果有限，但算法和内存优化更好
+ *
+ */
 
 #import "UIView+ML_BlurView.h"
 #import "UIImageBlurEffectCategory.h"
