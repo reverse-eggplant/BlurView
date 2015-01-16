@@ -5,6 +5,7 @@
 //  Created by malong on 15/1/13.
 //  Copyright (c) 2015年 LanOu3g. All rights reserved.
 //
+
 /*!
  *  @brief  显示模糊效果
  *
@@ -15,12 +16,30 @@
  2、UIVisualEffect虽然实现的模糊效果有限，但算法和内存优化更好
  *
  */
+#define __WEAKOBJ(weakObj,Obj) __weak __typeof(&*Obj)weakObj = Obj;
+
 
 #import "UIView+ML_BlurView.h"
 #import "UIImageBlurEffectCategory.h"
+#import <objc/runtime.h>
+
+@interface UIView()
+@property (weak, nonatomic)UIView * blurView;
+
+@end
 
 @implementation UIView (ML_BlurView)
 
+static char ML_BlurView_blurViewKey;
+
+- (void)setBlurView:(UIView *)blurView{
+    [self willChangeValueForKey:@"ML_BlurView_blurViewKey"];
+    objc_setAssociatedObject(self, &ML_BlurView_blurViewKey, blurView, OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (UIView *)blurView{
+    return  objc_getAssociatedObject(self, &ML_BlurView_blurViewKey);
+}
 
 - (void)showBlurWithDuration:(NSTimeInterval)duration
                    blurStyle:(BlurStyle)blurStyle
@@ -32,12 +51,13 @@
     }
     
 #if __IPHONE_8_0      //如果系统为iOS8，使用UIBlurEffect
-
+    
     //创建模糊效果对象
     UIBlurEffect * blurEffect = [UIBlurEffect effectWithStyle:(blurStyle == kUIBlurEffectStyleExtraLight)?UIBlurEffectStyleExtraLight:((blurStyle == kUIBlurEffectStyleLight)?UIBlurEffectStyleLight:UIBlurEffectStyleDark)];
     
     //根据模糊效果对象创建模糊视图
     UIVisualEffectView * blurEffectView = [[UIVisualEffectView alloc]initWithEffect:blurEffect];
+    
     /*!
      *  @brief 设置模糊视图的frame，如果要添加约束，则注掉如下代码
      */
@@ -45,7 +65,7 @@
     
     //将模糊视图添加到当前视图上
     [self insertSubview:blurEffectView atIndex:0];
-    
+    self.blurView = blurEffectView;
     
     //创建活力效果
     UIVibrancyEffect * vibrancyEffect = [UIVibrancyEffect effectForBlurEffect:blurEffect];
@@ -55,8 +75,6 @@
     
     //将视觉效果图添加到上一个模糊效果上，让模糊效果更有活力
     [blurEffectView.contentView addSubview:visualEffectView];
-    
-    
     
     /*!
      *  @brief  如果用约束来布局，而不设置frame,需做如下处理
@@ -79,11 +97,10 @@
      *  @brief  当duration不为零时，可让模糊视图在duration的时间内消失
      */
     if (duration > 0.000000) {
+        blurEffectView.alpha = 0.0;
         [UIView animateWithDuration:duration animations:^{
-            blurEffectView.alpha = 0.0;
-        }completion:^(BOOL finished) {
-            [blurEffectView removeFromSuperview];
-        }];
+            blurEffectView.alpha = 1.0;
+        }completion:NULL];
     }
     
     
@@ -94,10 +111,11 @@
      */
     
     UIImageView * aBlurImageView = [[UIImageView alloc]initWithFrame:self.bounds];
-
+    self.blurView = aBlurImageView;
+    
     if (![self isKindOfClass:[UIImageView class]]) {
         NSLog(@"image = %@",[self valueForKey:@"image"]);
-
+        
         UIGraphicsBeginImageContextWithOptions(self.bounds.size, YES, 1);
         [self drawViewHierarchyInRect:self.bounds afterScreenUpdates:YES];
         UIImage * screenShot = UIGraphicsGetImageFromCurrentImageContext();
@@ -106,15 +124,15 @@
         switch (blurStyle) {
             case kUIBlurEffectStyleExtraLight:
                 aBlurImageView.image = [UIImage imageByApplyingExtraLightEffectToImage:screenShot];
-
+                
                 break;
             case kUIBlurEffectStyleLight:
                 aBlurImageView.image = [UIImage imageByApplyingLightEffectToImage:screenShot];
-
+                
                 break;
             case kUIBlurEffectStyleDark:
                 aBlurImageView.image = [UIImage imageByApplyingDarkEffectToImage:screenShot];
-
+                
                 break;
                 
             default:
@@ -123,7 +141,7 @@
         
     }else{
         NSLog(@"image = %@",[self valueForKey:@"image"]);
-
+        
         switch (blurStyle) {
             case kUIBlurEffectStyleExtraLight:
                 aBlurImageView.image = [UIImage imageByApplyingExtraLightEffectToImage:self.image];
@@ -151,17 +169,32 @@
      *  @brief  当duration不为零时，可让模糊视图在duration的时间内消失
      */
     if (duration > 0.000000) {
+        aBlurImageView.alpha = 0.0;
         [UIView transitionWithView:weakBlurImageView duration:4.0f options:UIViewAnimationOptionCurveEaseInOut animations:^{
+            aBlurImageView.alpha = 1.0;
             
-            aBlurImageView.alpha = 0;
-            
-        } completion:^(BOOL finished) {
-            [aBlurImageView removeFromSuperview];
-        }];
+        } completion:NULL];
     }
     
 #endif
     
+}
+
+- (void)removeOldBlurEffectView{
+    
+    if (self.blurView) {
+        [self.blurView removeFromSuperview];
+    }
+}
+
+- (void)dismissOldBlurEffectViewWithDuration:(NSTimeInterval)duration{
+    
+    __WEAKOBJ(weakSelf, self);
+    [UIView animateWithDuration:duration animations:^{
+        weakSelf.blurView.alpha = 0.0;
+    }completion:^(BOOL finished) {
+        [weakSelf.blurView removeFromSuperview];
+    }];
 }
 
 @end

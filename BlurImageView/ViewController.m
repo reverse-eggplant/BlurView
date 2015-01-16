@@ -24,7 +24,7 @@
     UIImageView * blurImageView = [[UIImageView alloc]initWithImage:IMAGE_FILE(@"guoke", @"png")];
     blurImageView.frame = self.view.bounds;
     [self.view addSubview:blurImageView];
-    [blurImageView showBlurWithDuration:5.0 blurStyle:kUIBlurEffectStyleDark hidenViews:nil];
+    [blurImageView showBlurWithDuration:5.0 blurStyle:kUIBlurEffectStyleLight hidenViews:nil];
     
 }
 
